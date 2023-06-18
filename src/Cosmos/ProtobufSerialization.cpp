@@ -1,4 +1,4 @@
-// Copyright © 2017-2022 Trust Wallet.
+// Copyright © 2017-2023 Trust Wallet.
 //
 // This file is part of Trust. The full Trust copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
@@ -12,12 +12,16 @@
 #include "Protobuf/cosmwasm_wasm_v1_tx.pb.h"
 #include "Protobuf/distribution_tx.pb.h"
 #include "Protobuf/staking_tx.pb.h"
+#include "Protobuf/authz_tx.pb.h"
 #include "Protobuf/tx.pb.h"
+#include "Protobuf/stride_liquid_staking.pb.h"
+#include "Protobuf/gov_tx.pb.h"
 #include "Protobuf/crypto_secp256k1_keys.pb.h"
 #include "Protobuf/ibc_applications_transfer_tx.pb.h"
 #include "Protobuf/terra_wasm_v1beta1_tx.pb.h"
 #include "Protobuf/thorchain_bank_tx.pb.h"
 #include "Protobuf/ethermint_keys.pb.h"
+#include "Protobuf/injective_keys.pb.h"
 
 #include "PrivateKey.h"
 #include "Data.h"
@@ -207,7 +211,7 @@ google::protobuf::Any convertMessage(const Proto::Message& msg) {
             }
 
         case Proto::Message::kWasmExecuteContractGeneric: {
-            assert(msg.has_wasm_execute_contract_generic());
+                assert(msg.has_wasm_execute_contract_generic());
                 const auto& wasmExecute = msg.wasm_execute_contract_generic();
                 auto msgExecute = cosmwasm::wasm::v1::MsgExecuteContract();
                 msgExecute.set_sender(wasmExecute.sender_address());
@@ -218,6 +222,92 @@ google::protobuf::Any convertMessage(const Proto::Message& msg) {
                     *msgExecute.add_funds() = convertCoin(wasmExecute.coins(i));
                 }
                 any.PackFrom(msgExecute, ProtobufAnyNamespacePrefix);
+                return any;
+        }
+
+        case Proto::Message::kAuthGrant: {
+                assert(msg.has_auth_grant());
+                const auto& authGrant = msg.auth_grant();
+                auto msgAuthGrant = cosmos::authz::v1beta1::MsgGrant();
+                msgAuthGrant.set_grantee(authGrant.grantee());
+                msgAuthGrant.set_granter(authGrant.granter());
+                auto* mtAuth = msgAuthGrant.mutable_grant()->mutable_authorization();
+                // There is multiple grant possibilities, but we add support staking/compounding only for now.
+                switch (authGrant.grant_type_case()) {
+                case Proto::Message_AuthGrant::kGrantStake:
+                    mtAuth->PackFrom(authGrant.grant_stake(), ProtobufAnyNamespacePrefix);
+                    mtAuth->set_type_url("/cosmos.staking.v1beta1.StakeAuthorization");
+                    break;
+                case Proto::Message_AuthGrant::GRANT_TYPE_NOT_SET:
+                    break;
+                }
+                auto* mtExp = msgAuthGrant.mutable_grant()->mutable_expiration();
+                mtExp->set_seconds(authGrant.expiration());
+                any.PackFrom(msgAuthGrant, ProtobufAnyNamespacePrefix);
+                return any;
+        }
+
+        case Proto::Message::kAuthRevoke: {
+            assert(msg.has_auth_revoke());
+            const auto& authRevoke = msg.auth_revoke();
+            auto msgAuthRevoke = cosmos::authz::v1beta1::MsgRevoke();
+            msgAuthRevoke.set_granter(authRevoke.granter());
+            msgAuthRevoke.set_grantee(authRevoke.grantee());
+            msgAuthRevoke.set_msg_type_url(authRevoke.msg_type_url());
+            any.PackFrom(msgAuthRevoke, ProtobufAnyNamespacePrefix);
+            return any;
+        }
+        case Proto::Message::kMsgVote: {
+            assert(msg.has_msg_vote());
+            const auto& vote = msg.msg_vote();
+            auto msgVote = cosmos::gov::v1beta1::MsgVote();
+            // LCOV_EXCL_START
+            switch (vote.option()) {
+            case Proto::Message_VoteOption__UNSPECIFIED:
+                msgVote.set_option(cosmos::gov::v1beta1::VOTE_OPTION_UNSPECIFIED);
+                break;
+            case Proto::Message_VoteOption_YES:
+                msgVote.set_option(cosmos::gov::v1beta1::VOTE_OPTION_YES);
+                break;
+            case Proto::Message_VoteOption_ABSTAIN:
+                msgVote.set_option(cosmos::gov::v1beta1::VOTE_OPTION_ABSTAIN);
+                break;
+            case Proto::Message_VoteOption_NO:
+                msgVote.set_option(cosmos::gov::v1beta1::VOTE_OPTION_NO);
+                break;
+            case Proto::Message_VoteOption_NO_WITH_VETO:
+                msgVote.set_option(cosmos::gov::v1beta1::VOTE_OPTION_NO_WITH_VETO);
+                break;
+            case Proto::Message_VoteOption_Message_VoteOption_INT_MIN_SENTINEL_DO_NOT_USE_:
+                msgVote.set_option(cosmos::gov::v1beta1::VoteOption_INT_MIN_SENTINEL_DO_NOT_USE_);
+                break;
+            case Proto::Message_VoteOption_Message_VoteOption_INT_MAX_SENTINEL_DO_NOT_USE_:
+                msgVote.set_option(cosmos::gov::v1beta1::VoteOption_INT_MAX_SENTINEL_DO_NOT_USE_);
+                break;
+            }
+            // LCOV_EXCL_STOP
+            msgVote.set_proposal_id(vote.proposal_id());
+            msgVote.set_voter(vote.voter());
+            any.PackFrom(msgVote, ProtobufAnyNamespacePrefix);
+            return any;
+        }
+        case Proto::Message::kMsgStrideLiquidStakingStake: {
+                const auto& stride_liquid_staking_stake = msg.msg_stride_liquid_staking_stake();
+                auto liquid_staking_msg = stride::stakeibc::MsgLiquidStake();
+                liquid_staking_msg.set_creator(stride_liquid_staking_stake.creator());
+                liquid_staking_msg.set_amount(stride_liquid_staking_stake.amount());
+                liquid_staking_msg.set_host_denom(stride_liquid_staking_stake.host_denom());
+                any.PackFrom(liquid_staking_msg, ProtobufAnyNamespacePrefix);
+                return any;
+        }
+        case Proto::Message::kMsgStrideLiquidStakingRedeem: {
+                const auto& stride_liquid_staking_redeem = msg.msg_stride_liquid_staking_redeem();
+                auto liquid_staking_msg = stride::stakeibc::MsgRedeemStake();
+                liquid_staking_msg.set_creator(stride_liquid_staking_redeem.creator());
+                liquid_staking_msg.set_amount(stride_liquid_staking_redeem.amount());
+                liquid_staking_msg.set_receiver(stride_liquid_staking_redeem.receiver());
+                liquid_staking_msg.set_host_zone(stride_liquid_staking_redeem.host_zone());
+                any.PackFrom(liquid_staking_msg, ProtobufAnyNamespacePrefix);
                 return any;
         }
 
@@ -266,6 +356,12 @@ std::string buildAuthInfo(const Proto::SigningInput& input, TWCoinType coin) {
             signerInfo->mutable_public_key()->PackFrom(pubKey, ProtobufAnyNamespacePrefix);
             break;
         }
+        case TWCoinTypeNativeInjective: {
+            auto pubKey = injective::crypto::v1beta1::ethsecp256k1::PubKey();
+            pubKey.set_key(publicKey.bytes.data(), publicKey.bytes.size());
+            signerInfo->mutable_public_key()->PackFrom(pubKey, ProtobufAnyNamespacePrefix);
+            break;
+        }
         default: {
             auto pubKey = cosmos::crypto::secp256k1::PubKey();
             pubKey.set_key(publicKey.bytes.data(), publicKey.bytes.size());
@@ -296,6 +392,7 @@ Data buildSignature(const Proto::SigningInput& input, const std::string& seriali
 
     Data hashToSign;
     switch(coin) {
+        case TWCoinTypeNativeInjective:
         case TWCoinTypeNativeEvmos: {
             hashToSign = Hash::keccak256(serializedSignDoc);
             break;
@@ -331,7 +428,7 @@ static string broadcastMode(Proto::BroadcastMode mode) {
 }
 
 std::string buildProtoTxJson(const Proto::SigningInput& input, const std::string& serializedTx) {
-    const string serializedBase64 = Base64::encode(TW::data(serializedTx)); 
+    const string serializedBase64 = Base64::encode(TW::data(serializedTx));
     const json jsonSerialized = {
         {"tx_bytes", serializedBase64},
         {"mode", broadcastMode(input.mode())}

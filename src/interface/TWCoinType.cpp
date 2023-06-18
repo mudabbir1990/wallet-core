@@ -1,4 +1,4 @@
-// Copyright © 2017-2020 Trust Wallet.
+// Copyright © 2017-2023 Trust Wallet.
 //
 // This file is part of Trust. The full Trust copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
@@ -81,4 +81,8 @@ uint32_t TWCoinTypeSlip44Id(enum TWCoinType coin) {
 
 enum TWPublicKeyType TWCoinTypePublicKeyType(enum TWCoinType coin) {
     return TW::publicKeyType(coin);
+}
+
+uint32_t TWCoinTypeSS58Prefix(enum TWCoinType coin) {
+    return TW::ss58Prefix(coin);
 }

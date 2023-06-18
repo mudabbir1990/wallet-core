@@ -1,4 +1,4 @@
-// Copyright © 2017-2020 Trust.
+// Copyright © 2017-2023 Trust.
 //
 // This file is part of Trust. The full Trust copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
@@ -8,7 +8,7 @@
 
 #include "Transaction.h"
 
-#include "../Data.h"
+#include "Data.h"
 #include "../Hash.h"
 #include "../PrivateKey.h"
 #include "../proto/Filecoin.pb.h"
@@ -28,6 +28,13 @@ class Signer {
 
     /// Signs the given transaction.
     static Data sign(const PrivateKey& privateKey, Transaction& transaction) noexcept;
+
+private:
+    /// Signs a Proto::SigningInput transaction.
+    static Proto::SigningOutput signSecp256k1(const Proto::SigningInput& input);
+
+    /// Signs a Proto::SigningInput transaction.
+    static Proto::SigningOutput signDelegated(const Proto::SigningInput& input);
 };
 
 } // namespace TW::Filecoin

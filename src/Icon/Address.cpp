@@ -1,4 +1,4 @@
-// Copyright © 2017-2020 Trust Wallet.
+// Copyright © 2017-2023 Trust Wallet.
 //
 // This file is part of Trust. The full Trust copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
@@ -6,25 +6,20 @@
 
 #include "Address.h"
 
-#include "../Hash.h"
 #include "../HexCoding.h"
-#include "../PrivateKey.h"
 
 #include <TrezorCrypto/sha3.h>
 
-using namespace TW;
-using namespace TW::Icon;
-
 namespace TW::Icon {
 
-static const std::string addressPrefix = "hx";
+static const std::string gAddressPrefix = "hx";
 static const std::string contractPrefix = "cx";
 
 bool Address::isValid(const std::string& string) {
     if (string.size() != Address::size * 2 + 2) {
         return false;
     }
-    if (!std::equal(addressPrefix.begin(), addressPrefix.end(), string.begin()) &&
+    if (!std::equal(gAddressPrefix.begin(), gAddressPrefix.end(), string.begin()) &&
         !std::equal(contractPrefix.begin(), contractPrefix.end(), string.begin())) {
         return false;
     }
@@ -36,7 +31,7 @@ Address::Address(const std::string& string) {
         throw std::invalid_argument("Invalid address data");
     }
 
-    if (std::equal(addressPrefix.begin(), addressPrefix.end(), string.begin())) {
+    if (std::equal(gAddressPrefix.begin(), gAddressPrefix.end(), string.begin())) {
         type = TypeAddress;
     } else if (std::equal(contractPrefix.begin(), contractPrefix.end(), string.begin())) {
         type = TypeContract;
@@ -44,7 +39,7 @@ Address::Address(const std::string& string) {
         throw std::invalid_argument("Invalid address prefix");
     }
 
-    const auto data = parse_hex(string.begin() + 2, string.end());
+    const auto data = parse_hex(string.substr(2));
     std::copy(data.begin(), data.end(), bytes.begin());
 }
 
@@ -58,7 +53,7 @@ Address::Address(const PublicKey& publicKey, enum AddressType type)
 std::string Address::string() const {
     switch (type) {
     case TypeAddress:
-        return addressPrefix + hex(bytes);
+        return gAddressPrefix + hex(bytes);
     case TypeContract:
         return contractPrefix + hex(bytes);
     default:

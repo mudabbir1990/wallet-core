@@ -1,4 +1,4 @@
-// Copyright © 2017-2021 Trust Wallet.
+// Copyright © 2017-2023 Trust Wallet.
 //
 // This file is part of Trust. The full Trust copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
@@ -6,12 +6,13 @@
 
 #pragma once
 
-#include "../Data.h"
+#include "Data.h"
 
 #include "OpCodes.h"
 #include <TrustWalletCore/TWCoinType.h>
 
 #include <string>
+#include <utility>
 #include <vector>
 #include <cassert>
 
@@ -19,6 +20,9 @@ namespace TW::Bitcoin {
 
 class Script {
   public:
+    // Maximum length for OP_RETURN data
+    static const size_t MaxOpReturnLength = 80;
+
     /// Script raw bytes.
     Data bytes;
 
@@ -29,8 +33,8 @@ class Script {
     template <typename It>
     Script(It begin, It end) : bytes(begin, end) {}
 
-    /// Initializaes a script with a collection of raw bytes by moving.
-    explicit Script(const Data& bytes) : bytes(bytes) {}
+    /// Initializes a script with a collection of raw bytes by moving.
+    explicit Script(Data bytes) : bytes(std::move(bytes)) {}
 
     /// Whether the script is empty.
     bool empty() const { return bytes.empty(); }
@@ -47,7 +51,7 @@ class Script {
     /// Determines whether this is a pay-to-witness-public-key-hash (P2WPKH) script.
     bool isPayToWitnessPublicKeyHash() const;
 
-    /// Determines whether this is a witness programm script.
+    /// Determines whether this is a witness program script.
     bool isWitnessProgram() const;
 
     /// Matches the script to a pay-to-public-key (P2PK) script.
@@ -69,7 +73,7 @@ class Script {
     bool matchMultisig(std::vector<Data>& publicKeys, int& required) const;
 
     /// Builds a pay-to-public-key (P2PK) script from a public key.
-    static Script buildPayToPublicKey(const Data& publickKey);
+    static Script buildPayToPublicKey(const Data& publicKey);
 
     /// Builds a pay-to-public-key-hash (P2PKH) script from a public key hash.
     static Script buildPayToPublicKeyHash(const Data& hash);
@@ -90,7 +94,7 @@ class Script {
     /// Builds a V1 pay-to-witness-program script, P2TR (from a 32-byte Schnorr public key).
     static Script buildPayToV1WitnessProgram(const Data& publicKey);
 
-    /// Builds an OP_RETURN script with given data
+    /// Builds an OP_RETURN script with given data. Returns empty script on error, if data is too long (>80).
     static Script buildOpReturnScript(const Data& data);
 
     /// Builds a appropriate lock script for the given

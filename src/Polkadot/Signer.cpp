@@ -1,4 +1,4 @@
-// Copyright © 2017-2020 Trust Wallet.
+// Copyright © 2017-2023 Trust Wallet.
 //
 // This file is part of Trust. The full Trust copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
@@ -9,8 +9,7 @@
 #include "../Hash.h"
 #include "../PrivateKey.h"
 
-using namespace TW;
-using namespace TW::Polkadot;
+namespace TW::Polkadot {
 
 static constexpr size_t hashTreshold = 256;
 
@@ -30,3 +29,5 @@ Proto::SigningOutput Signer::sign(const Proto::SigningInput &input) noexcept {
     protoOutput.set_encoded(encoded.data(), encoded.size());
     return protoOutput;
 }
+
+} // namespace TW::Polkadot

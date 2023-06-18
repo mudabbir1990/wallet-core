@@ -1,4 +1,4 @@
-// Copyright © 2017-2020 Trust Wallet.
+// Copyright © 2017-2023 Trust Wallet.
 //
 // This file is part of Trust. The full Trust copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
@@ -13,9 +13,9 @@ namespace TW::VeChain {
 
 /// Entry point for VeChain.
 /// Note: do not put the implementation here (no matter how simple), to avoid having coin-specific includes in this file
-class Entry: public Ethereum::Entry {
+class Entry final : public Ethereum::Entry {
 public:
-    virtual void sign(TWCoinType coin, const Data& dataIn, Data& dataOut) const;
+     void sign(TWCoinType coin, const Data& dataIn, Data& dataOut) const;
 };
 
 } // namespace TW::VeChain

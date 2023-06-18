@@ -1,4 +1,4 @@
-// Copyright © 2017-2022 Trust Wallet.
+// Copyright © 2017-2023 Trust Wallet.
 //
 // This file is part of Trust. The full Trust copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
@@ -22,7 +22,7 @@
 #include "uint256.h"
 #include <TrustWalletCore/TWAnySigner.h>
 
-#include "../interface/TWTestUtilities.h"
+#include "TestUtilities.h"
 #include <gtest/gtest.h>
 
 #include <thread>
@@ -172,7 +172,7 @@ TEST(TWTransactionCompiler, ExternalSignatureSignEthereum) {
 
     const auto ExpectedTx = "f86c0b8504a817c800825208943535353535353535353535353535353535353535880de0b6b3a76400008025a0360a84fb41ad07f07c845fedc34cde728421803ebbaae392fc39c116b29fc07ba053bd9d1376e15a191d844db458893b928f3efbfee90c9febf51ab84c97966779";
     {
-        EXPECT_EQ(TWDataSize(outputData.get()), 183ul);
+        EXPECT_EQ(TWDataSize(outputData.get()), 217ul);
         Ethereum::Proto::SigningOutput output;
         ASSERT_TRUE(output.ParseFromArray(TWDataBytes(outputData.get()), (int)TWDataSize(outputData.get())));
 
@@ -199,7 +199,7 @@ Data dataFromTWData(std::shared_ptr<TWData> data) {
 }
 
 TEST(TWTransactionCompiler, ExternalSignatureSignBitcoin) {
-    // Test external signining with a Bircoin transaction with 3 input UTXOs, all used, but only using 2 public keys.
+    // Test external signining with a Bitcoin transaction with 3 input UTXOs, all used, but only using 2 public keys.
     // Three signatures are neeeded.  This illustrates that order of UTXOs/hashes is not always the same.
 
     const auto revUtxoHash0 = parse_hex("07c42b969286be06fae38528c85f0a1ce508d4df837eb5ac4cf5f2a7a9d65fa8");

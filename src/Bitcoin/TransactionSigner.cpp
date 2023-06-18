@@ -1,4 +1,4 @@
-// Copyright © 2017-2021 Trust Wallet.
+// Copyright © 2017-2023 Trust Wallet.
 //
 // This file is part of Trust. The full Trust copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
@@ -12,8 +12,7 @@
 #include "../Zcash/Transaction.h"
 #include "../Zcash/TransactionBuilder.h"
 
-using namespace TW;
-using namespace TW::Bitcoin;
+namespace TW::Bitcoin {
 
 template <typename Transaction, typename TransactionBuilder>
 TransactionPlan TransactionSigner<Transaction, TransactionBuilder>::plan(const SigningInput& input) {
@@ -28,10 +27,14 @@ Result<Transaction, Common::Proto::SigningError> TransactionSigner<Transaction, 
     } else {
         plan = TransactionBuilder::plan(input);
     }
-    auto transaction = TransactionBuilder::template build<Transaction>(plan, input.toAddress, input.changeAddress, input.coinType, input.lockTime);
+    auto tx_result = TransactionBuilder::template build<Transaction>(plan, input.toAddress, input.changeAddress, input.coinType, input.lockTime);
+    if (!tx_result) {
+        return Result<Transaction, Common::Proto::SigningError>::failure(tx_result.error());
+    }
+    Transaction transaction = tx_result.payload();
     SigningMode signingMode =
-        estimationMode ? SigningMode_SizeEstimationOnly :
-        optionalExternalSigs.has_value() ? SigningMode_External : SigningMode_Normal;
+        estimationMode ? SigningMode_SizeEstimationOnly : optionalExternalSigs.has_value() ? SigningMode_External
+                                                                                           : SigningMode_Normal;
     SignatureBuilder<Transaction> signer(std::move(input), plan, transaction, signingMode, optionalExternalSigs);
     return signer.sign();
 }
@@ -44,7 +47,11 @@ Result<HashPubkeyList, Common::Proto::SigningError> TransactionSigner<Transactio
     } else {
         plan = TransactionBuilder::plan(input);
     }
-    auto transaction = TransactionBuilder::template build<Transaction>(plan, input.toAddress, input.changeAddress, input.coinType, input.lockTime);
+    auto tx_result = TransactionBuilder::template build<Transaction>(plan, input.toAddress, input.changeAddress, input.coinType, input.lockTime);
+    if (!tx_result) {
+        return Result<HashPubkeyList, Common::Proto::SigningError>::failure(tx_result.error());
+    }
+    Transaction transaction = tx_result.payload();
     SignatureBuilder<Transaction> signer(std::move(input), plan, transaction, SigningMode_HashOnly);
     auto signResult = signer.sign();
     if (!signResult) {
@@ -57,3 +64,5 @@ Result<HashPubkeyList, Common::Proto::SigningError> TransactionSigner<Transactio
 template class Bitcoin::TransactionSigner<Bitcoin::Transaction, TransactionBuilder>;
 template class Bitcoin::TransactionSigner<Zcash::Transaction, Zcash::TransactionBuilder>;
 template class Bitcoin::TransactionSigner<Groestlcoin::Transaction, TransactionBuilder>;
+
+} // namespace TW::Bitcoin

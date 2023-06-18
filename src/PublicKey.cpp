@@ -1,10 +1,11 @@
-// Copyright © 2017-2022 Trust Wallet.
+// Copyright © 2017-2023 Trust Wallet.
 //
 // This file is part of Trust. The full Trust copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
 // file LICENSE at the root of the source code distribution tree.
 
 #include "PublicKey.h"
+#include "PrivateKey.h"
 #include "Data.h"
 
 #include <TrezorCrypto/ecdsa.h>
@@ -14,6 +15,7 @@
 #include <TrezorCrypto/secp256k1.h>
 #include <TrezorCrypto/sodium/keypair.h>
 #include <TrezorCrypto/zilliqa.h>
+#include <ImmutableX/StarkKey.h>
 
 #include <iterator>
 
@@ -40,6 +42,8 @@ bool PublicKey::isValid(const Data& data, enum TWPublicKeyType type) {
     case TWPublicKeyTypeSECP256k1Extended:
     case TWPublicKeyTypeNIST256p1Extended:
         return size == secp256k1ExtendedSize && data[0] == 0x04;
+    case TWPublicKeyTypeStarkex:
+        return size == starkexSize;
     default:
         return false;
     }
@@ -47,13 +51,14 @@ bool PublicKey::isValid(const Data& data, enum TWPublicKeyType type) {
 
 /// Initializes a public key with a collection of bytes.
 ///
-/// @throws std::invalid_argument if the data is not a valid public key.
+/// \throws std::invalid_argument if the data is not a valid public key.
 PublicKey::PublicKey(const Data& data, enum TWPublicKeyType type)
     : type(type) {
     if (!isValid(data, type)) {
         throw std::invalid_argument("Invalid public key data");
     }
     switch (type) {
+    case TWPublicKeyTypeStarkex:
     case TWPublicKeyTypeSECP256k1:
     case TWPublicKeyTypeNIST256p1:
     case TWPublicKeyTypeSECP256k1Extended:
@@ -157,6 +162,8 @@ bool PublicKey::verify(const Data& signature, const Data& message) const {
         verifyBuffer[63] &= 127;
         return ed25519_sign_open(message.data(), message.size(), ed25519PublicKey.data(), verifyBuffer.data()) == 0;
     }
+    case TWPublicKeyTypeStarkex:
+        return ImmutableX::verify(this->bytes, signature, message);
     default:
         throw std::logic_error("Not yet implemented");
     }
@@ -206,20 +213,33 @@ Data PublicKey::hash(const Data& prefix, Hash::Hasher hasher, bool skipTypeByte)
     return result;
 }
 
-PublicKey PublicKey::recover(const Data& signature, const Data& message) {
-    if (signature.size() < 65) {
+PublicKey PublicKey::recoverRaw(const Data& signatureRS, byte recId, const Data& messageDigest) {
+    if (signatureRS.size() < 2 * PrivateKey::_size) {
         throw std::invalid_argument("signature too short");
     }
-    auto v = signature[64];
-    // handle EIP155 Eth encoding of V, of the form 27+v, or 35+chainID*2+v
-    if (v >= 27) {
-        v = !(v & 0x01);
+    if (recId >= 4) {
+        throw std::invalid_argument("Invalid recId (>=4)");
     }
-    TW::Data result(65);
-    if (ecdsa_recover_pub_from_sig(&secp256k1, result.data(), signature.data(), message.data(), v) != 0) {
-        throw std::invalid_argument("recover failed");
+    if (messageDigest.size() < PrivateKey::_size) {
+        throw std::invalid_argument("digest too short");
+    }
+    TW::Data result(secp256k1SignatureSize);
+    if (auto ret = ecdsa_recover_pub_from_sig(&secp256k1, result.data(), signatureRS.data(), messageDigest.data(), recId); ret != 0) {
+        throw std::invalid_argument("recover failed " + std::to_string(ret));
     }
     return PublicKey(result, TWPublicKeyTypeSECP256k1Extended);
+}
+
+PublicKey PublicKey::recover(const Data& signature, const Data& messageDigest) {
+    if (signature.size() < secp256k1SignatureSize) {
+        throw std::invalid_argument("signature too short");
+    }
+    auto v = signature[secp256k1SignatureSize - 1];
+    // handle EIP155 Eth encoding of V, of the form 27+v, or 35+chainID*2+v
+    if (v >= PublicKey::SignatureVOffset) {
+        v = !(v & 0x01);
+    }
+    return recoverRaw(signature, v, messageDigest);
 }
 
 bool PublicKey::isValidED25519() const {

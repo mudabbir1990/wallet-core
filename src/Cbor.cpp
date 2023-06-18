@@ -1,4 +1,4 @@
-// Copyright © 2017-2020 Trust Wallet.
+// Copyright © 2017-2023 Trust Wallet.
 //
 // This file is part of Trust. The full Trust copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
@@ -6,6 +6,7 @@
 
 #include "Cbor.h"
 #include "HexCoding.h"
+#include "Numeric.h"
 
 #include <sstream>
 #include <cassert>
@@ -52,15 +53,15 @@ Encode Encode::array(const vector<Encode>& elems) {
     return e;
 }
 
-Encode Encode::map(const vector<std::pair<Encode, Encode>>& elems) {
-    Encode e;
+Encode Encode::map(const std::map<Encode, Encode>& elems) {
+    Encode enc;
     auto n = elems.size();
-    e.appendValue(Decode::MT_map, n);
-    for (auto i = 0ul; i < n; ++i) {
-        e.append(elems[i].first.encoded());
-        e.append(elems[i].second.encoded());
+    enc.appendValue(Decode::MT_map, n);
+    for (const auto& e: elems) {
+        enc.append(e.first.encoded());
+        enc.append(e.second.encoded());
     }
-    return e;
+    return enc;
 }
 
 Encode Encode::tag(uint64_t value, const Encode& elem) {
@@ -311,8 +312,11 @@ vector<Decode> Decode::getCompoundElements(uint32_t countMultiplier, TW::byte ex
             break;
         }
         uint32_t elemLen = nextElem.getTotalLen();
+        if (elemLen == 0 || checkAddUnsignedOverflow(idx, elemLen)) {
+            throw std::invalid_argument("CBOR invalid element length");
+        }
         if (idx + elemLen > length()) {
-            throw std::invalid_argument("CBOR array data too short");
+            throw std::invalid_argument("CBOR invalid array data");
         }
         elems.emplace_back(Decode(data, subStart + idx, elemLen));
         idx += elemLen;

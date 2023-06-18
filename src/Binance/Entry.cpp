@@ -1,4 +1,4 @@
-// Copyright © 2017-2020 Trust Wallet.
+// Copyright © 2017-2023 Trust Wallet.
 //
 // This file is part of Trust. The full Trust copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
@@ -8,25 +8,30 @@
 
 #include "../proto/TransactionCompiler.pb.h"
 #include "Address.h"
-#include "Coin.h"
 #include "Signer.h"
 
-using namespace TW::Binance;
-using namespace TW;
-using namespace std;
+namespace TW::Binance {
 
-bool Entry::validateAddress([[maybe_unused]] TWCoinType coin, const string& address, TW::byte, TW::byte, const char*) const {
+bool Entry::validateAddress([[maybe_unused]] TWCoinType coin, const std::string& address, [[maybe_unused]] const PrefixVariant& addressPrefix) const {
+    if (std::holds_alternative<Bech32Prefix>(addressPrefix)) {
+        if (const auto hrp = std::get<Bech32Prefix>(addressPrefix); hrp) {
+            return Address::isValid(address, hrp);
+        }
+    }
+
+    // Use the default validation, which handles a specific set of valid HRPs.
     return Address::isValid(address);
 }
 
-string Entry::deriveAddress([[maybe_unused]] TWCoinType coin, const PublicKey& publicKey, TW::byte, const char*) const {
-    return Address(publicKey).string();
+std::string Entry::deriveAddress([[maybe_unused]] TWCoinType coin, const PublicKey& publicKey, [[maybe_unused]] TWDerivation derivation, [[maybe_unused]] const PrefixVariant& addressPrefix) const {
+    const std::string hrp = getFromPrefixHrpOrDefault(addressPrefix, coin);
+    return Address(publicKey, hrp).string();
 }
 
 Data Entry::addressToData([[maybe_unused]] TWCoinType coin, const std::string& address) const {
     Address addr;
     if (!Address::decode(address, addr)) {
-        return Data();
+        return {};
     }
     return addr.getKeyHash();
 }
@@ -35,7 +40,7 @@ void Entry::sign([[maybe_unused]] TWCoinType coin, const TW::Data& dataIn, TW::D
     signTemplate<Signer, Proto::SigningInput>(dataIn, dataOut);
 }
 
-string Entry::signJSON([[maybe_unused]] TWCoinType coin, const std::string& json, const Data& key) const {
+std::string Entry::signJSON([[maybe_unused]] TWCoinType coin, const std::string& json, const Data& key) const {
     return Signer::signJSON(json, key);
 }
 
@@ -109,3 +114,5 @@ Data Entry::buildTransactionInput([[maybe_unused]] TWCoinType coinType, const st
     const auto txInputData = data(input.SerializeAsString());
     return txInputData;
 }
+
+} // namespace TW::Binance

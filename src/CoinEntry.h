@@ -1,4 +1,4 @@
-// Copyright © 2017-2020 Trust Wallet.
+// Copyright © 2017-2023 Trust Wallet.
 //
 // This file is part of Trust. The full Trust copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
@@ -8,6 +8,7 @@
 
 #include <TrustWalletCore/TWCoinType.h>
 #include <TrustWalletCore/TWDerivation.h>
+#include <TrustWalletCore/TWFilecoinAddressType.h>
 
 #include "Data.h"
 #include "PublicKey.h"
@@ -17,26 +18,36 @@
 
 #include <string>
 #include <vector>
+#include <variant>
 #include <utility>
 
 namespace TW {
 
 typedef std::vector<std::pair<Data, Data>> HashPubkeyList;
 
+struct Base58Prefix {
+    TW::byte p2pkh;
+    TW::byte p2sh;
+};
+
+using Bech32Prefix = const char *;
+using SS58Prefix = uint32_t;
+
+/// Declare a dummy prefix to notify the entry to derive a delegated address.
+struct DelegatedPrefix {};
+
+using PrefixVariant = std::variant<Base58Prefix, Bech32Prefix, SS58Prefix, DelegatedPrefix, std::monostate>;
+
 /// Interface for coin-specific entry, used to dispatch calls to coins
 /// Implement this for all coins.
 class CoinEntry {
 public:
     virtual ~CoinEntry() noexcept = default;
-    virtual bool validateAddress(TWCoinType coin, const std::string& address, TW::byte p2pkh, TW::byte p2sh, const char* hrp) const = 0;
+    virtual bool validateAddress(TWCoinType coin, const std::string& address, const PrefixVariant& addressPrefix) const = 0;
     // normalizeAddress is optional, it may leave this default, no-change implementation
     virtual std::string normalizeAddress([[maybe_unused]] TWCoinType coin, const std::string& address) const { return address; }
-    // Address derivation, default derivation
-    virtual std::string deriveAddress(TWCoinType coin, const PublicKey& publicKey, TW::byte p2pkh, const char* hrp) const = 0;
-    // Address derivation, by default invoking default
-    virtual std::string deriveAddress(TWCoinType coin, [[maybe_unused]] TWDerivation derivation, const PublicKey& publicKey, TW::byte p2pkh, const char* hrp) const {
-        return deriveAddress(coin, publicKey, p2pkh, hrp);
-    }
+    // Address derivation
+    virtual std::string deriveAddress([[maybe_unused]] TWCoinType coin, const PublicKey& publicKey, [[maybe_unused]] TWDerivation derivation, [[maybe_unused]] const PrefixVariant& addressPrefix) const = 0;
     // Return the binary representation of a string address, used by AnyAddress
     // It is optional, if not defined, 'AnyAddress' interface will not support this coin.
     virtual Data addressToData([[maybe_unused]] TWCoinType coin, [[maybe_unused]] const std::string& address) const { return {}; }
@@ -102,5 +113,11 @@ Data txCompilerTemplate(const Data& dataIn, Func&& fnHandler) {
     }
     return TW::data(output.SerializeAsString());
 }
+
+// Get the hrp from the prefix variant, or the coin-default if it is empty or it is not an hrp
+const char* getFromPrefixHrpOrDefault(const PrefixVariant &prefix, TWCoinType coin);
+
+// Get the p2pkh prefix from the prefix variant, or the coin-default if it does not contain base58 prefixes
+byte getFromPrefixPkhOrDefault(const PrefixVariant &prefix, TWCoinType coin);
 
 } // namespace TW

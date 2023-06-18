@@ -1,4 +1,4 @@
-// Copyright © 2017-2020 Trust Wallet.
+// Copyright © 2017-2023 Trust Wallet.
 //
 // This file is part of Trust. The full Trust copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
@@ -7,7 +7,7 @@
 #pragma once
 
 #include "EOS/Name.h" // Name is reused
-#include "../Data.h"
+#include "Data.h"
 #include "../BinaryCoding.h"
 
 #include <string>
@@ -16,7 +16,7 @@
 namespace TW::FIO {
 
 /// Encodes a value as a variable-length integer.
-/// @returns the number of bytes written.
+/// \returns the number of bytes written.
 uint8_t encodeVarInt(uint64_t num, Data& data);
 
 /// Encodes an ASCII string prefixed by the length (varInt)

@@ -1,4 +1,4 @@
-// Copyright © 2017-2020 Trust Wallet.
+// Copyright © 2017-2023 Trust Wallet.
 //
 // This file is part of Trust. The full Trust copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
@@ -6,7 +6,7 @@
 
 #include "OpCode.h"
 #include "../Base58.h"
-#include "../Data.h"
+#include "Data.h"
 #include "../Hash.h"
 #include "../Ontology/ParamsBuilder.h"
 
@@ -17,7 +17,7 @@ using namespace TW;
 namespace TW::NEO {
 
 bool Address::isValid(const std::string& string) {
-    const auto decoded = Base58::bitcoin.decodeCheck(string);
+    const auto decoded = Base58::decodeCheck(string);
     return !(decoded.size() != Address::size || decoded[0] != version);
 }
 

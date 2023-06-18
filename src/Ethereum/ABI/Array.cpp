@@ -1,4 +1,4 @@
-// Copyright © 2017-2022 Trust Wallet.
+// Copyright © 2017-2023 Trust Wallet.
 //
 // This file is part of Trust. The full Trust copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
@@ -131,6 +131,42 @@ Data ParamArray::hashStruct() const {
 std::string ParamArray::getExtraTypes(std::vector<std::string>& ignoreList) const {
     const auto& proto = getProtoElem();
     return (proto != nullptr) ? proto->getExtraTypes(ignoreList) : "";
+}
+
+void ParamArrayFix::encode(Data& data) const {
+    this->_params.encode(data);
+}
+
+bool ParamArrayFix::decode(const Data& encoded, size_t& offset_inout) {
+    return this->_params.decode(encoded, offset_inout);
+}
+
+bool ParamArrayFix::setValueJson(const std::string& value) {
+    auto valuesJson = json::parse(value, nullptr, false);
+    if (valuesJson.is_discarded() || !valuesJson.is_array() || _params.getCount() != valuesJson.size()) {
+        return false;
+    }
+
+    std::size_t idx{0};
+    for (auto&& e : valuesJson) {
+        std::string eString = e.is_string() ? e.get<std::string>() : e.dump();
+        _params.getParamUnsafe(idx)->setValueJson(eString);
+        ++idx;
+    }
+    return true;
+}
+
+void ParamArrayFix::addParams(const Params& params) {
+    auto addParamFunctor = [this](auto&& param) {
+        if (param == nullptr) {
+            throw std::runtime_error("param can't be nullptr");
+        }
+        if (_params.getCount() >= 1 && param->getType() != _params.getParamUnsafe(0)->getType()) {
+            throw std::runtime_error("params need to be the same type");
+        } // do not add different types
+        _params.addParam(param);
+    };
+    std::for_each(begin(params), end(params), addParamFunctor);
 }
 
 } // namespace TW::Ethereum::ABI

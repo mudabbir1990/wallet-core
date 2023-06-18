@@ -1,4 +1,4 @@
-// Copyright © 2017-2020 Trust Wallet.
+// Copyright © 2017-2023 Trust Wallet.
 //
 // This file is part of Trust. The full Trust copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
@@ -11,7 +11,7 @@
 #include "TransactionOutput.h"
 #include "Bitcoin/Transaction.h"
 #include "Bitcoin/Script.h"
-#include "../Data.h"
+#include "Data.h"
 #include "../proto/Decred.pb.h"
 
 #include "Bitcoin/SignatureVersion.h"

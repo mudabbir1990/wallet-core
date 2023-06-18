@@ -1,4 +1,4 @@
-// Copyright © 2017-2020 Trust Wallet.
+// Copyright © 2017-2023 Trust Wallet.
 //
 // This file is part of Trust. The full Trust copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
@@ -40,14 +40,14 @@ Data Signer::signData(const PrivateKey& privKey, const Data& data) {
     return signature;
 }
 
-std::string Signer::signatureToBsase58(const Data& sig) {
+std::string Signer::signatureToBase58(const Data& sig) {
     Data sigWithSuffix(sig);
     append(sigWithSuffix, TW::data(SignatureSuffix));
     // take hash, ripemd, first 4 bytes 
     Data hash = Hash::ripemd(sigWithSuffix);
     Data sigWithChecksum(sig);
     append(sigWithChecksum, TW::data(hash.data(), 4));
-    string s = SignaturePrefix + Base58::bitcoin.encode(sigWithChecksum);
+    string s = SignaturePrefix + Base58::encode(sigWithChecksum);
     return s;
 }
 

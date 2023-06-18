@@ -1,11 +1,10 @@
-// Copyright © 2017-2020 Trust Wallet.
+// Copyright © 2017-2023 Trust Wallet.
 //
 // This file is part of Trust. The full Trust copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
 // file LICENSE at the root of the source code distribution tree.
 
 #include "Signer.h"
-#include "Address.h"
 #include "Base58.h"
 #include "Base64.h"
 #include "HexCoding.h"
@@ -38,7 +37,7 @@ Proto::SigningOutput Signer::sign(const TW::PrivateKey& privateKey, Transaction&
 
     /// sign ed25519
     auto sigRaw = privateKey.sign(msg, TWCurveED25519);
-    auto signature = Identifiers::prefixSignature + Base58::bitcoin.encodeCheck(sigRaw);
+    auto signature = Identifiers::prefixSignature + Base58::encodeCheck(sigRaw);
 
     /// encode the message using rlp
     auto rlpTxRaw = buildRlpTxRaw(txRlp, sigRaw);

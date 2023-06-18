@@ -1,4 +1,4 @@
-// Copyright © 2017-2020 Trust Wallet.
+// Copyright © 2017-2023 Trust Wallet.
 //
 // This file is part of Trust. The full Trust copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
@@ -20,6 +20,21 @@ inline void pad_left(Data& data, const uint32_t size) {
     data.insert(data.begin(), size - data.size(), 0);
 }
 
+template<typename It>
+inline Data data(It&& begin, It&& end) {
+    return Data(begin, end);
+}
+
+template<typename Collection>
+inline Data data_from(const Collection& collection) {
+    Data out;
+    out.reserve(collection.size());
+    for (auto&& cur : collection) {
+        out.emplace_back(uint8_t(cur));
+    }
+    return out;
+}
+
 inline Data data(const std::string& data) {
     return Data(data.begin(), data.end());
 }
@@ -30,6 +45,12 @@ inline Data data(const byte* data, size_t size) {
 
 inline void append(Data& data, const Data& suffix) {
     data.insert(data.end(), suffix.begin(), suffix.end());
+}
+
+inline Data concat(const Data& data, const Data& suffix) {
+    Data out = data;
+    append(out, suffix);
+    return out;
 }
 
 inline void append(Data& data, const byte suffix) {

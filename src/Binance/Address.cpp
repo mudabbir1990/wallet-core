@@ -1,5 +1,5 @@
 // Copyright © 2017 Pieter Wuille
-// Copyright © 2017-2020 Trust Wallet.
+// Copyright © 2017-2023 Trust Wallet.
 //
 // This file is part of Trust. The full Trust copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
@@ -10,7 +10,7 @@
 #include <TrustWalletCore/TWHRP.h>
 #include <vector>
 
-using namespace TW::Binance;
+namespace TW::Binance {
 
 const std::string Address::_hrp = HRP_BINANCE;
 const std::string Address::hrpValidator = "bva";
@@ -21,11 +21,18 @@ bool Address::isValid(const std::string& addr) {
     return decode(addr, addrNotUsed);
 }
 
+bool Address::isValid(const std::string& addr, const std::string& hrp) {
+    Address addrNotUsed;
+    return Bech32Address::decode(addr, addrNotUsed, hrp);
+}
+
 bool Address::decode(const std::string& addr, Address& obj_out) {
-    for (const auto& hrp: validHrps) {
+    for (const auto& hrp : validHrps) {
         if (Bech32Address::decode(addr, obj_out, hrp)) {
             return true;
         }
     }
     return false;
 }
+
+} // namespace TW::Binance

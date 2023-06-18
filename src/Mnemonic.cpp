@@ -1,4 +1,4 @@
-// Copyright © 2017-2021 Trust Wallet.
+// Copyright © 2017-2023 Trust Wallet.
 //
 // This file is part of Trust. The full Trust copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
@@ -28,16 +28,15 @@ inline const char* const* mnemonicWordlist() { return wordlist; }
 bool Mnemonic::isValidWord(const std::string& word) {
     const char* wordC = word.c_str();
     const auto len = word.length();
+    // Although this operation is not security-critical, we aim for constant-time operation here as well
+    // (i.e., no early exit on match)
+    auto found = false;
     for (const char* const* w = mnemonicWordlist(); *w != nullptr; ++w) {
-        if (strlen(*w) != len) {
-            continue;
-        }
-        if (strncmp(*w, wordC, len) == 0) {
-            return true;
+        if (std::string(*w).size() == len && strncmp(*w, wordC, len) == 0) {
+            found = true;
         }
     }
-    // not found
-    return false;
+    return found;
 }
 
 std::string Mnemonic::suggest(const std::string& prefix) {

@@ -1,4 +1,4 @@
-// Copyright © 2017-2020 Trust Wallet.
+// Copyright © 2017-2023 Trust Wallet.
 //
 // This file is part of Trust. The full Trust copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
@@ -10,15 +10,17 @@
 #include "../Bitcoin/SegwitAddress.h"
 #include "Signer.h"
 
-using namespace TW::Groestlcoin;
-using namespace std;
+namespace TW::Groestlcoin {
 
-bool Entry::validateAddress([[maybe_unused]] TWCoinType coin, const string& address, TW::byte p2pkh, TW::byte p2sh, const char* hrp) const {
-    return TW::Bitcoin::SegwitAddress::isValid(address, hrp)
-        || Address::isValid(address, {p2pkh, p2sh});
+bool Entry::validateAddress([[maybe_unused]] TWCoinType coin, const std::string& address, const PrefixVariant& addressPrefix) const {
+    if (auto* prefix = std::get_if<Base58Prefix>(&addressPrefix); prefix) {
+        return Address::isValid(address, {prefix->p2pkh, prefix->p2sh});
+    }
+    return TW::Bitcoin::SegwitAddress::isValid(address, std::get<Bech32Prefix>(addressPrefix));
 }
 
-string Entry::deriveAddress([[maybe_unused]] TWCoinType coin, const PublicKey& publicKey, [[maybe_unused]] TW::byte p2pkh, const char* hrp) const {
+std::string Entry::deriveAddress(TWCoinType coin, const PublicKey& publicKey, [[maybe_unused]] TWDerivation derivation, const PrefixVariant& addressPrefix) const {
+    std::string hrp = getFromPrefixHrpOrDefault(addressPrefix, coin);
     return TW::Bitcoin::SegwitAddress(publicKey, hrp).string();
 }
 
@@ -29,3 +31,5 @@ void Entry::sign([[maybe_unused]] TWCoinType coin, const TW::Data& dataIn, TW::D
 void Entry::plan([[maybe_unused]] TWCoinType coin, const TW::Data& dataIn, TW::Data& dataOut) const {
     planTemplate<Signer, Bitcoin::Proto::SigningInput>(dataIn, dataOut);
 }
+
+} // namespace TW::Groestlcoin

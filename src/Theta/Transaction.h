@@ -1,4 +1,4 @@
-// Copyright © 2017-2020 Trust Wallet.
+// Copyright © 2017-2023 Trust Wallet.
 //
 // This file is part of Trust. The full Trust copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
@@ -10,7 +10,7 @@
 #include <vector>
 
 #include "Coins.h"
-#include "../Data.h"
+#include "Data.h"
 #include "../Ethereum/Address.h"
 
 namespace TW::Theta {
@@ -48,8 +48,8 @@ class Transaction {
         : _fee(std::move(fee)), inputs(std::move(inputs)), outputs(std::move(outputs)) {}
 
     Transaction(Ethereum::Address from, Ethereum::Address to,
-                uint256_t thetaAmount, uint256_t tfuelAmount, uint64_t sequence,
-                uint256_t feeAmount = 1000000000000);
+                const uint256_t& thetaAmount, const uint256_t& tfuelAmount, uint64_t sequence,
+                const uint256_t& feeAmount = 1000000000000);
 
     /// Encodes the transaction
     Data encode() const noexcept;

@@ -1,4 +1,4 @@
-// Copyright © 2017-2020 Trust Wallet.
+// Copyright © 2017-2023 Trust Wallet.
 //
 // This file is part of Trust. The full Trust copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
@@ -14,7 +14,7 @@
 
 namespace TW::Bitcoin {
 
-template <typename TypeWithAmount> // TypeWithAmount has to have a uint64_t amount
+template <typename TypeWithAmount> // TypeWithAmount has to have an uint64_t amount
 class InputSelector {
 public:
     /// Selects unspent transactions to use given a target transaction value, using complete logic.

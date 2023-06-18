@@ -1,4 +1,4 @@
-// Copyright © 2017-2020 Trust Wallet.
+// Copyright © 2017-2023 Trust Wallet.
 //
 // This file is part of Trust. The full Trust copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
@@ -23,7 +23,7 @@ class Address {
 
     /// Address data consisting of a prefix byte followed by the public key
     /// hash.
-    std::array<uint8_t, size> bytes;
+    std::array<uint8_t, size> bytes{};
 
     /// Address type.
     enum AddressType type;

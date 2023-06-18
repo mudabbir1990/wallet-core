@@ -1,4 +1,4 @@
-// Copyright © 2017-2020 Trust Wallet.
+// Copyright © 2017-2023 Trust Wallet.
 //
 // This file is part of Trust. The full Trust copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
@@ -11,8 +11,7 @@
 #include "Transaction.h"
 #include "TransactionBuilder.h"
 
-using namespace TW;
-using namespace TW::Zcash;
+namespace TW::Zcash {
 
 TransactionPlan Signer::plan(const SigningInput& input) noexcept {
     auto plan = Bitcoin::TransactionSigner<Transaction, TransactionBuilder>::plan(input);
@@ -38,3 +37,5 @@ SigningOutput Signer::sign(const SigningInput& input) noexcept {
     }
     return output;
 }
+
+} // namespace TW::Zcash

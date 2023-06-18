@@ -1,4 +1,4 @@
-// Copyright © 2017-2020 Trust Wallet.
+// Copyright © 2017-2023 Trust Wallet.
 //
 // This file is part of Trust. The full Trust copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
@@ -12,10 +12,10 @@
 #include <cassert>
 #include <stdexcept>
 
-using namespace TW::Tron;
+namespace TW::Tron {
 
 bool Address::isValid(const std::string& string) {
-    const auto decoded = Base58::bitcoin.decodeCheck(string);
+    const auto decoded = Base58::decodeCheck(string);
     if (decoded.size() != Address::size) {
         return false;
     }
@@ -36,3 +36,5 @@ Address::Address(const PublicKey& publicKey) {
     bytes[0] = prefix;
     std::copy(keyhash.end() - size + 1, keyhash.end(), bytes.begin() + 1);
 }
+
+} // namespace TW::Tron
